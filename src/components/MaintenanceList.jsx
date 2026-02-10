@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { CheckCircle2, Clock, AlertCircle, Wrench, List, PackageSearch, ChevronRight, Filter, XCircle, Pause } from 'lucide-react';
 import { maintenanceAPI } from '../services/api';
+import { formatThaiDate } from '../lib/utils';
 import MaintenanceDetail from './MaintenanceDetail';
 import useLiff from '../hooks/useLiff';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
@@ -18,13 +19,13 @@ const MaintenanceList = () => {
     const date = new Date(dateString);
     const now = new Date();
     const diffInSeconds = Math.floor((now - date) / 1000);
-    
+
     if (diffInSeconds < 60) return 'เมื่อสักครู่';
     if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} นาทีที่แล้ว`;
     if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} ชั่วโมงที่แล้ว`;
     if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} วันที่แล้ว`;
-    
-    return date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+
+    return formatThaiDate(dateString);
   };
 
   useEffect(() => {
@@ -52,10 +53,10 @@ const MaintenanceList = () => {
       cancelled: { icon: XCircle, variant: 'destructive', label: 'ยกเลิก' },
       on_hold: { icon: Pause, variant: 'warning', label: 'พักงาน' }
     };
-    
+
     const config = statusConfig[status] || statusConfig.pending;
     const Icon = config.icon;
-    
+
     return (
       <Badge variant={config.variant} className="gap-1.5 py-1 px-3">
         <Icon size={12} />
@@ -67,11 +68,10 @@ const MaintenanceList = () => {
   const getSourceBadge = (record) => {
     const isSystem = record.maintenance_type === 'inspection';
     return (
-      <Badge variant="outline" className={`text-[10px] font-bold ${
-        isSystem 
-          ? 'border-blue-500/30 text-blue-400 bg-blue-500/5' 
-          : 'border-purple-500/30 text-purple-400 bg-purple-500/5'
-      }`}>
+      <Badge variant="outline" className={`text-[10px] font-bold ${isSystem
+        ? 'border-blue-500/30 text-blue-400 bg-blue-500/5'
+        : 'border-purple-500/30 text-purple-400 bg-purple-500/5'
+        }`}>
         {isSystem ? 'System' : 'Technician'}
       </Badge>
     );
@@ -89,36 +89,28 @@ const MaintenanceList = () => {
   return (
     <div className="space-y-6">
       {/* Filter Section */}
-      <Card className="p-2 bg-gray-900/50 backdrop-blur-sm sticky top-24 z-30 border-gray-800 rounded-none sm:rounded-2xl">
-        <div className="flex overflow-x-auto scrollbar-none gap-2 pb-1 -mx-1 px-1">
-          {[
-            { value: 'all', label: 'ทั้งหมด', icon: List },
-            { value: 'pending', label: 'รอดำเนินการ', icon: Clock },
-            { value: 'in_progress', label: 'กำลังซ่อม', icon: Wrench },
-            { value: 'completed', label: 'เสร็จแล้ว', icon: CheckCircle2 },
-            { value: 'cancelled', label: 'ยกเลิก', icon: XCircle }
-          ].map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <Button
-                key={tab.value}
-                onClick={() => setFilter(tab.value)}
-                variant={filter === tab.value ? 'secondary' : 'ghost'}
-                size="sm"
-                className={`flex-none min-w-[110px] sm:flex-1 h-11 transition-all rounded-lg ${
-                  filter === tab.value
-                    ? 'bg-gray-800 text-green-400 ring-1 ring-green-500/20'
-                    : 'text-gray-500 hover:text-gray-300'
-                }`}
-              >
-                <Icon className={`w-4 h-4 mr-2 ${filter === tab.value ? 'text-green-400' : ''}`} />
-                <span className="font-semibold">{tab.label}</span>
-              </Button>
-            );
-          })}
+      <div className="sticky top-24 z-30 bg-gray-950/80 backdrop-blur-sm pb-4 pt-2 -mx-2 px-2 sm:mx-0 sm:px-0">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Filter className="h-5 w-5 text-green-500" />
+          </div>
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="block w-full pl-10 pr-10 py-3 bg-gray-900 border border-gray-800 rounded-xl text-white appearance-none focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all font-medium shadow-lg"
+          >
+            <option value="all">รายการทั้งหมด</option>
+            <option value="pending">รอดำเนินการ</option>
+            <option value="in_progress">กำลังซ่อม</option>
+            <option value="completed">เสร็จสิ้น</option>
+            <option value="cancelled">ยกเลิก</option>
+          </select>
+          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+            <ChevronRight className="h-5 w-5 text-gray-500 rotate-90" />
+          </div>
         </div>
-      </Card>
-      
+      </div>
+
       {/* List Feed */}
       <div className="space-y-4 px-2 sm:px-0">
         {records.length === 0 ? (
@@ -161,7 +153,7 @@ const MaintenanceList = () => {
                     <span className="text-[10px] text-gray-500 font-mono sm:mt-1">{record.work_order}</span>
                   </div>
                 </div>
-                
+
                 <div className="mt-5 pt-4 border-t border-gray-800 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="text-xs text-gray-500 flex items-center gap-1.5">
@@ -183,7 +175,7 @@ const MaintenanceList = () => {
 
       {/* Detail Modal Layer */}
       {selectedRecordId && profile && (
-        <MaintenanceDetail 
+        <MaintenanceDetail
           recordId={selectedRecordId}
           userId={profile.userId}
           onClose={() => {

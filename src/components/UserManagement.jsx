@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { usersAPI } from '../services/users';
-import { 
-  Users, UserPlus, Edit2, Trash2, Shield, User as UserIcon, 
-  Search, ShieldCheck, Mail, Calendar, AlertCircle 
+import {
+  Users, UserPlus, Edit2, Trash2, Shield, User as UserIcon,
+  Search, ShieldCheck, Mail, Calendar, AlertCircle
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import Button from './ui/Button';
@@ -77,7 +77,7 @@ const UserManagement = ({ profile }) => {
 
   const handleDeleteUser = async (userId) => {
     if (!confirm('คุณแน่ใจหรือไม่ที่จะลบผู้ใช้นี้?')) return;
-    
+
     try {
       await usersAPI.delete(profile.userId, userId);
       showToast('ลบผู้ใช้สำเร็จ', 'success');
@@ -112,7 +112,7 @@ const UserManagement = ({ profile }) => {
     return role === 'moderator' ? <Shield className="w-4 h-4" /> : <UserIcon className="w-4 h-4" />;
   };
 
-  const filteredUsers = users.filter(user => 
+  const filteredUsers = users.filter(user =>
     user.display_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.line_user_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -162,90 +162,93 @@ const UserManagement = ({ profile }) => {
       </div>
 
       {/* Users Table */}
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-2xl">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-gray-800/50 border-b border-gray-800">
-                <th className="px-6 py-4 text-sm font-semibold text-gray-300">ผู้ใช้งาน</th>
-                <th className="px-6 py-4 text-sm font-semibold text-gray-300">สิทธิ์ / บทบาท</th>
-                <th className="px-6 py-4 text-sm font-semibold text-gray-300 text-center">จัดการ</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-800">
-              {filteredUsers.length === 0 ? (
-                <tr>
-                  <td colSpan="3" className="p-20 text-center bg-gray-950/50 border-dashed border-gray-800">
-                    <AlertCircle className="w-12 h-12 text-gray-700 mx-auto mb-4" />
-                    <CardTitle className="text-gray-600 text-lg">ไม่พบรายชื่อผู้ใช้</CardTitle>
-                    <p className="text-gray-500 text-sm mt-1">ลองใช้คำสำคัญอื่นในการค้นหา</p>
-                  </td>
-                </tr>
-              ) : (
-                filteredUsers.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-800/30 transition-colors group">
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-4">
-                        <div className="relative">
-                          <div className="w-12 h-12 rounded-2xl bg-gray-800 flex items-center justify-center border border-gray-700 group-hover:border-green-500/50 transition-colors overflow-hidden">
-                            {user.picture_url ? (
-                              <img src={user.picture_url} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                              <UserIcon className="text-gray-500" size={24} />
-                            )}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="font-bold text-white group-hover:text-green-400 transition-colors">{user.display_name}</div>
-                          <div className="text-xs text-gray-500 font-mono mt-0.5">{user.line_user_id}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${getRoleBadge(user.role)}`}>
-                        {getRoleIcon(user.role)}
-                        {user.role}
+      {/* Users List (Responsive Grid) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {filteredUsers.length === 0 ? (
+          <div className="col-span-full p-12 text-center bg-gray-950/50 border-dashed border-gray-800 rounded-2xl">
+            <AlertCircle className="w-12 h-12 text-gray-700 mx-auto mb-4" />
+            <div className="text-gray-600 text-lg font-semibold">ไม่พบรายชื่อผู้ใช้</div>
+            <p className="text-gray-500 text-sm mt-1">ลองใช้คำสำคัญอื่นในการค้นหา</p>
+          </div>
+        ) : (
+          filteredUsers.map((user) => (
+            <div
+              key={user.id}
+              className="group relative bg-gray-900 border border-gray-800 rounded-2xl p-5 hover:border-gray-700 transition-all hover:shadow-lg hover:shadow-black/50"
+            >
+              <div className="flex items-start gap-4">
+                {/* Avatar */}
+                <div className="flex-none">
+                  <div className="w-14 h-14 rounded-2xl bg-gray-800 flex items-center justify-center border border-gray-700 group-hover:border-green-500/50 transition-colors overflow-hidden">
+                    {user.picture_url ? (
+                      <img src={user.picture_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <UserIcon className="text-gray-500" size={24} />
+                    )}
+                  </div>
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <h3 className="font-bold text-white text-lg truncate group-hover:text-green-400 transition-colors">
+                        {user.display_name}
+                      </h3>
+                      <p className="text-xs text-gray-500 font-mono truncate">{user.line_user_id}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border ${getRoleBadge(user.role)}`}>
+                      {getRoleIcon(user.role)}
+                      {user.role}
+                    </span>
+                    {user.email && (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs text-gray-400 bg-gray-800 border border-gray-700 truncate max-w-[150px]">
+                        <Mail size={10} />
+                        {user.email}
                       </span>
-                    </td>
-                    <td className="px-6 py-5">
-                      <div className="flex justify-center gap-2">
-                        <button
-                          onClick={() => openEditModal(user)}
-                          className="p-2.5 text-blue-400 hover:bg-blue-500/10 rounded-xl transition-all hover:scale-110"
-                          title="แก้ไข"
-                        >
-                          <Edit2 size={18} />
-                        </button>
-                        {user.id !== profile?.userId && (
-                          <button
-                            onClick={() => handleDeleteUser(user.id)}
-                            className="p-2.5 text-red-400 hover:bg-red-500/10 rounded-xl transition-all hover:scale-110"
-                            title="ลบ"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions Overlay / Bottom Bar */}
+              <div className="mt-4 pt-4 border-t border-gray-800 flex justify-end gap-2">
+                <button
+                  onClick={() => openEditModal(user)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl text-blue-400 hover:bg-blue-500/10 border border-transparent hover:border-blue-500/30 transition-all text-sm font-medium"
+                >
+                  <Edit2 size={16} />
+                  แก้ไข
+                </button>
+                {user.id !== profile?.userId && (
+                  <button
+                    onClick={() => handleDeleteUser(user.id)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/30 transition-all text-sm font-medium"
+                  >
+                    <Trash2 size={16} />
+                    ลบ
+                  </button>
+                )}
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Add User Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <Card className="max-w-md w-full border-gray-800 shadow-2xl animate-in fade-in zoom-in duration-200">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <Card className="w-full h-full sm:h-auto sm:max-w-md border-gray-800 shadow-2xl animate-in slide-in-from-bottom duration-200 sm:zoom-in bg-gray-950 flex flex-col sm:block">
             <CardHeader className="border-b border-gray-800 pb-4">
               <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
                 <UserPlus className="w-6 h-6 text-purple-400" />
                 เพิ่มผู้ใช้ใหม่
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-6">
+            <CardContent className="pt-6 flex-1 overflow-y-auto sm:overflow-visible">
               <form onSubmit={handleAddUser} className="space-y-4">
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-gray-400">LINE User ID *</label>
@@ -282,7 +285,7 @@ const UserManagement = ({ profile }) => {
                     <option value="moderator">ผู้ดูแลระบบ</option>
                   </select>
                 </div>
-                <div className="flex gap-3 pt-4">
+                <div className="flex gap-3 pt-4 sm:pb-0 pb-8">
                   <Button
                     type="button"
                     variant="ghost"
@@ -306,15 +309,15 @@ const UserManagement = ({ profile }) => {
 
       {/* Edit User Modal */}
       {showEditModal && selectedUser && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <Card className="max-w-md w-full border-gray-800 shadow-2xl animate-in fade-in zoom-in duration-200">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <Card className="w-full h-full sm:h-auto sm:max-w-md border-gray-800 shadow-2xl animate-in slide-in-from-bottom duration-200 sm:zoom-in bg-gray-950 flex flex-col sm:block">
             <CardHeader className="border-b border-gray-800 pb-4">
               <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
                 <Edit2 className="w-6 h-6 text-blue-400" />
                 แก้ไขข้อมูลผู้ใช้
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-6">
+            <CardContent className="pt-6 flex-1 overflow-y-auto sm:overflow-visible">
               <form onSubmit={handleUpdateUser} className="space-y-4">
                 <div className="space-y-2 opacity-60">
                   <label className="text-sm font-semibold text-gray-400">LINE User ID</label>
@@ -349,13 +352,13 @@ const UserManagement = ({ profile }) => {
                     <option value="moderator">ผู้ดูแลระบบ</option>
                   </select>
                 </div>
-                <div className="flex gap-3 pt-4">
+                <div className="flex gap-3 pt-4 sm:pb-0 pb-8">
                   <Button
                     type="button"
                     variant="ghost"
                     onClick={() => {
-                        setShowEditModal(false);
-                        setSelectedUser(null);
+                      setShowEditModal(false);
+                      setSelectedUser(null);
                     }}
                     className="flex-1 rounded-xl h-12 font-bold"
                   >
