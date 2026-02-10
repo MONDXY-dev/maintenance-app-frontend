@@ -90,7 +90,8 @@ const useLiff = () => {
                 ...userProfile,
                 userId: data.user.id,
                 email: data.user.email,
-                role: data.user.role
+                role: data.user.role,
+                status: data.user.status
               });
               setIsLoggedIn(true);
             } else {

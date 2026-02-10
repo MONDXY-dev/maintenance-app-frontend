@@ -103,4 +103,36 @@ export const usersAPI = {
 
     return response.json();
   },
+
+  // ดึงค่าคอนฟิกของระบบ
+  getSettings: async () => {
+    const response = await fetch(`${API_URL}/users/settings`, {
+      method: 'GET',
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to fetch settings');
+    }
+
+    return response.json();
+  },
+
+  // อัพเดทค่าคอนฟิกของระบบ
+  updateSettings: async (userId, settings) => {
+    const response = await fetch(`${API_URL}/users/settings`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId, settings }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to update settings');
+    }
+
+    return response.json();
+  },
 };

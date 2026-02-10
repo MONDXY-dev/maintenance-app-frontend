@@ -154,7 +154,7 @@ const MaintenanceForm = ({ userId, onSuccess, onCancel }) => {
     setImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
 
-  const selectedEquipment = equipment.find(e => e.id == formData.equipmentId);
+  const selectedEquipment = equipment.find(e => (e.equipment_id || e.id) == formData.equipmentId);
   const selectedIssue = issueTypes.find(i => i.id === formData.maintenanceType);
 
   return (
@@ -220,20 +220,20 @@ const MaintenanceForm = ({ userId, onSuccess, onCancel }) => {
                   <p className="text-sm">กรุณาเพิ่มเครื่องจักรในระบบก่อน</p>
                 </div>
               ) : (
-                equipment.map((item) => (
+                equipment.map((item, index) => (
                   <button
-                    key={item.id}
+                    key={item.id || `eq-${index}`}
                     type="button"
                     onClick={() => {
-                      setFormData(prev => ({ ...prev, equipmentId: item.id }));
+                      setFormData(prev => ({ ...prev, equipmentId: item.equipment_id || item.id }));
                       setCurrentStep(2);
                     }}
-                    className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all active:scale-[0.98] ${formData.equipmentId == item.id
+                    className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all active:scale-[0.98] ${formData.equipmentId == (item.equipment_id || item.id)
                       ? 'bg-emerald-500/10 border-emerald-500'
                       : 'bg-zinc-900/80 border-zinc-800 hover:border-zinc-700'
                       }`}
                   >
-                    <div className={`w-14 h-14 rounded-xl flex items-center justify-center shrink-0 ${formData.equipmentId == item.id ? 'bg-emerald-600' : 'bg-zinc-800'
+                    <div className={`w-14 h-14 rounded-xl flex items-center justify-center shrink-0 ${formData.equipmentId == (item.equipment_id || item.id) ? 'bg-emerald-600' : 'bg-zinc-800'
                       }`}>
                       <Factory size={28} className="text-white" />
                     </div>

@@ -11,7 +11,6 @@ import {
   ClipboardList,
   Building2,
   ChevronDown,
-  BarChart3,
   Cog,
   FileText,
   ShoppingCart,
@@ -69,17 +68,6 @@ const Header = ({ profile, onLogout, currentView, onViewChange }) => {
                     <Wrench className="w-4 h-4 mr-2" />
                     แจ้งซ่อม
                   </Button>
-                  {['admin', 'moderator'].includes(profile.role) && (
-                    <Button
-                      variant={currentView === 'dashboard' ? 'secondary' : 'ghost'}
-                      onClick={() => onViewChange('dashboard')}
-                      size="sm"
-                      className={currentView === 'dashboard' ? 'bg-gray-800 text-blue-400' : ''}
-                    >
-                      <BarChart3 className="w-4 h-4 mr-2" />
-                      Dashboard
-                    </Button>
-                  )}
 
 
                   {/* More Menu (Admin) */}
@@ -231,13 +219,6 @@ const Header = ({ profile, onLogout, currentView, onViewChange }) => {
                   <div className="my-4 border-t border-gray-800/50 mx-4" />
                   <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Management</p>
 
-                  <button
-                    onClick={() => handleMobileNav('dashboard')}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${currentView === 'dashboard' ? 'bg-blue-500/10 text-blue-400' : 'text-gray-400 hover:bg-gray-900 hover:text-white'}`}
-                  >
-                    <BarChart3 className="w-5 h-5" />
-                    <span className="font-medium">Dashboard</span>
-                  </button>
 
                   <button
                     onClick={() => handleMobileNav('equipment')}

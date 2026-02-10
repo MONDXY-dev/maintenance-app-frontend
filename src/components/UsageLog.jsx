@@ -48,6 +48,7 @@ export default function UsageLog({ onClose, userId }) {
   const [isLogging, setIsLogging] = useState(false);
 
   const [logNotes, setLogNotes] = useState('');
+  const [logCondition, setLogCondition] = useState('normal');
   const [logImage, setLogImage] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
@@ -74,8 +75,8 @@ export default function UsageLog({ onClose, userId }) {
     try {
       // Get fresh equipment data with schedules
       const [equipmentRes, logsRes] = await Promise.all([
-        equipmentAPI.getById(eq.id),
-        usageAPI.getByEquipment(eq.id)
+        equipmentAPI.getById(eq.equipment_id || eq.id),
+        usageAPI.getByEquipment(eq.equipment_id || eq.id)
       ]);
 
       const freshEquipment = equipmentRes.equipment || eq;
@@ -108,7 +109,7 @@ export default function UsageLog({ onClose, userId }) {
 
     try {
       setLoading(true);
-      const res = await usageAPI.getByEquipment(selectedEquipment.id, newPage);
+      const res = await usageAPI.getByEquipment(selectedEquipment.equipment_id || selectedEquipment.id, newPage);
       setUsageLogs(res.logs || []);
       setCurrentPage(res.page);
       setTotalPages(res.totalPages);
@@ -231,7 +232,7 @@ export default function UsageLog({ onClose, userId }) {
       const newTotalUsage = inputMode === 'current' ? finalValue : currentUsage + finalValue;
 
       const formData = new FormData();
-      formData.append('equipment_id', selectedEquipment.id);
+      formData.append('equipment_id', selectedEquipment.equipment_id || selectedEquipment.id);
       formData.append('usage_value', newTotalUsage);
       if (logNotes) formData.append('notes', logNotes);
       formData.append('recorded_by', userId);
@@ -277,7 +278,7 @@ export default function UsageLog({ onClose, userId }) {
     setSaving(true);
     try {
       await usageAPI.update(editingLog.id, {
-        equipment_id: selectedEquipment.id,
+        equipment_id: selectedEquipment.equipment_id || selectedEquipment.id,
         usage_value: parseFloat(editValue),
         notes: null
       });
@@ -390,7 +391,7 @@ export default function UsageLog({ onClose, userId }) {
 
             return (
               <Card
-                key={eq.id}
+                key={eq.equipment_id || eq.id}
                 className="border-gray-800 hover:border-green-500/50 transition-all"
               >
                 <CardContent className="p-0">
@@ -492,7 +493,7 @@ export default function UsageLog({ onClose, userId }) {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          toggleListProgress(eq.id);
+                          toggleListProgress(eq.equipment_id || eq.id);
                         }}
                         className="w-full py-2.5 px-4 flex items-center justify-center gap-2 text-sm text-gray-500 hover:bg-gray-900/30 transition-colors border-t border-gray-800"
                       >
@@ -885,12 +886,12 @@ export default function UsageLog({ onClose, userId }) {
                 <CardContent className="pt-0 pb-4 border-t border-gray-800">
                   <div className="grid grid-cols-2 gap-3 mt-4">
                     {[
-                      { label: 'ประเภท', value: selectedEquipment.category },
-                      { label: 'สถานที่', value: selectedEquipment.location },
-                      { label: 'รุ่น', value: selectedEquipment.model },
-                      { label: 'รหัสเครื่อง', value: selectedEquipment.serial_number },
-                    ].map((item, i) => (
-                      <div key={i} className="bg-gray-900/50 rounded-lg p-3">
+                      { label: 'ประเภท', value: selectedEquipment.category, key: 'cat' },
+                      { label: 'สถานที่', value: selectedEquipment.location, key: 'loc' },
+                      { label: 'รุ่น', value: selectedEquipment.model, key: 'mod' },
+                      { label: 'รหัสเครื่อง', value: selectedEquipment.serial_number, key: 'sn' },
+                    ].map((item) => (
+                      <div key={item.key} className="bg-gray-900/50 rounded-lg p-3">
                         <p className="text-xs text-gray-500 mb-1">{item.label}</p>
                         <p className="font-medium text-white">{item.value || '-'}</p>
                       </div>
@@ -1254,7 +1255,7 @@ export default function UsageLog({ onClose, userId }) {
 
                   return (
                     <Card
-                      key={eq.id}
+                      key={eq.equipment_id || eq.id}
                       className="border-gray-800 hover:border-green-500/50 transition-all"
                     >
                       <CardContent className="p-0">
@@ -1356,7 +1357,7 @@ export default function UsageLog({ onClose, userId }) {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                toggleListProgress(eq.id);
+                                toggleListProgress(eq.equipment_id || eq.id);
                               }}
                               className="w-full py-2.5 px-4 flex items-center justify-center gap-2 text-sm text-gray-500 hover:bg-gray-900/30 transition-colors border-t border-gray-800"
                             >

@@ -16,7 +16,7 @@ export default defineConfig({
     // Proxy API requests to maintenance backend
     proxy: {
       '/maintenance/api': {
-        target: 'http://maintenance-backend-dev:3002',
+        target: 'http://localhost:3002',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/maintenance\/api/, '/api')
       }

@@ -15,18 +15,52 @@ const UserManagement = ({ profile }) => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [settings, setSettings] = useState({
+    ALLOW_REGISTRATION: true,
+    ALLOW_WHITELIST: true
+  });
+  const [updatingSettings, setUpdatingSettings] = useState(false);
   const [formData, setFormData] = useState({
     lineUserId: '',
     displayName: '',
-    email: '',
-    role: 'technician'
+    role: 'technician',
+    status: 'active'
   });
 
   useEffect(() => {
     if (profile?.userId) {
       loadUsers();
+      loadSettings();
     }
   }, [profile]);
+
+  const loadSettings = async () => {
+    try {
+      const response = await usersAPI.getSettings();
+      if (response.success) {
+        setSettings({
+          ALLOW_REGISTRATION: response.settings.ALLOW_REGISTRATION === 'true',
+          ALLOW_WHITELIST: response.settings.ALLOW_WHITELIST === 'true'
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load settings:', error);
+    }
+  };
+
+  const handleToggleSetting = async (key) => {
+    try {
+      setUpdatingSettings(true);
+      const newSettings = { ...settings, [key]: !settings[key] };
+      await usersAPI.updateSettings(profile.userId, newSettings);
+      setSettings(newSettings);
+      showToast('อัพเดทการตั้งค่าสำเร็จ');
+    } catch (error) {
+      showToast(error.message, 'error');
+    } finally {
+      setUpdatingSettings(false);
+    }
+  };
 
   const loadUsers = async () => {
     try {
@@ -50,7 +84,7 @@ const UserManagement = ({ profile }) => {
       await usersAPI.add(profile.userId, formData);
       showToast('เพิ่มผู้ใช้สำเร็จ', 'success');
       setShowAddModal(false);
-      setFormData({ lineUserId: '', displayName: '', email: '', role: 'technician' });
+      setFormData({ lineUserId: '', displayName: '', role: 'technician' });
       loadUsers();
     } catch (error) {
       showToast(error.message, 'error');
@@ -62,13 +96,13 @@ const UserManagement = ({ profile }) => {
     try {
       await usersAPI.update(profile.userId, selectedUser.id, {
         displayName: formData.displayName,
-        email: formData.email,
-        role: formData.role
+        role: formData.role,
+        status: formData.status
       });
       showToast('อัพเดทข้อมูลสำเร็จ', 'success');
       setShowEditModal(false);
       setSelectedUser(null);
-      setFormData({ lineUserId: '', displayName: '', email: '', role: 'technician' });
+      setFormData({ lineUserId: '', displayName: '', role: 'technician' });
       loadUsers();
     } catch (error) {
       showToast(error.message, 'error');
@@ -92,10 +126,31 @@ const UserManagement = ({ profile }) => {
     setFormData({
       lineUserId: user.line_user_id,
       displayName: user.display_name,
-      email: user.email || '',
-      role: user.role
+      role: user.role,
+      status: user.status
     });
     setShowEditModal(true);
+  };
+
+  const handleApproveUser = async (user) => {
+    try {
+      await usersAPI.update(profile.userId, user.id, { status: 'active' });
+      showToast('อนุมัติผู้ใช้สำเร็จ');
+      loadUsers();
+    } catch (error) {
+      showToast(error.message, 'error');
+    }
+  };
+
+  const handleRejectUser = async (user) => {
+    if (!confirm(`คุณแน่ใจหรือไม่ที่จะปฏิเสธผู้ใช้ ${user.display_name}?`)) return;
+    try {
+      await usersAPI.update(profile.userId, user.id, { status: 'rejected' });
+      showToast('ปฏิเสธผู้ใช้สำเร็จ');
+      loadUsers();
+    } catch (error) {
+      showToast(error.message, 'error');
+    }
   };
 
   const getRoleBadge = (role) => {
@@ -114,8 +169,7 @@ const UserManagement = ({ profile }) => {
 
   const filteredUsers = users.filter(user =>
     user.display_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.line_user_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    user.line_user_id?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
@@ -147,6 +201,40 @@ const UserManagement = ({ profile }) => {
         </Button>
       </div>
 
+      {/* System Settings Toggles */}
+      {profile.role === 'admin' && (
+        <Card className="bg-gray-900 border-gray-800 rounded-2xl overflow-hidden shadow-xl">
+          <CardContent className="p-6">
+            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <ShieldCheck size={16} className="text-green-500" />
+              การตั้งค่าระบบความปลอดภัย
+            </h3>
+            <div className="grid grid-cols-1 gap-6">
+              <div className="p-4 bg-gray-950 rounded-xl border border-gray-800 flex items-center justify-between">
+                <div>
+                  <p className="font-bold text-white">ระบบ Whitelist (บังคับใช้งาน)</p>
+                  <p className="text-xs text-gray-500">ผู้ใช้ใหม่ทุกคนต้องได้รับการอนุมัติจากผู้ดูแลระบบก่อนเข้าใช้งาน</p>
+                </div>
+                <Badge className="bg-gray-800 text-gray-400 border-gray-700 font-black">MANDATORY</Badge>
+              </div>
+              <div className="flex items-center justify-between p-4 bg-gray-950 rounded-xl border border-gray-800">
+                <div>
+                  <p className="font-bold text-white">เปิดรับลงทะเบียน</p>
+                  <p className="text-xs text-gray-500">อนุญาตให้คนนอกสามารถกดขอเข้าระบบเพื่อรอรับการอนุมัติได้</p>
+                </div>
+                <button
+                  disabled={updatingSettings}
+                  onClick={() => handleToggleSetting('ALLOW_REGISTRATION')}
+                  className={`w-12 h-6 rounded-full transition-colors relative ${settings.ALLOW_REGISTRATION ? 'bg-green-600' : 'bg-gray-700'}`}
+                >
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${settings.ALLOW_REGISTRATION ? 'left-7' : 'left-1'}`} />
+                </button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Search Bar */}
       <div className="relative group">
         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -154,7 +242,7 @@ const UserManagement = ({ profile }) => {
         </div>
         <input
           type="text"
-          placeholder="ค้นหาด้วยชื่อ, Line ID หรือ อีเมล..."
+          placeholder="ค้นหาด้วยชื่อ หรือ Line ID..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="block w-full pl-11 pr-4 py-4 bg-gray-900 border border-gray-800 rounded-2xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all shadow-xl"
@@ -192,9 +280,21 @@ const UserManagement = ({ profile }) => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <h3 className="font-bold text-white text-lg truncate group-hover:text-green-400 transition-colors">
-                        {user.display_name}
-                      </h3>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-bold text-white text-lg truncate group-hover:text-green-400 transition-colors">
+                          {user.display_name}
+                        </h3>
+                        {user.status === 'pending' && (
+                          <Badge className="bg-yellow-500/20 text-yellow-500 border-yellow-500/30 text-[10px] py-0 px-1.5 uppercase font-black">
+                            Pending
+                          </Badge>
+                        )}
+                        {user.status === 'rejected' && (
+                          <Badge className="bg-red-500/20 text-red-500 border-red-500/30 text-[10px] py-0 px-1.5 uppercase font-black">
+                            Rejected
+                          </Badge>
+                        )}
+                      </div>
                       <p className="text-xs text-gray-500 font-mono truncate">{user.line_user_id}</p>
                     </div>
                   </div>
@@ -204,33 +304,49 @@ const UserManagement = ({ profile }) => {
                       {getRoleIcon(user.role)}
                       {user.role}
                     </span>
-                    {user.email && (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs text-gray-400 bg-gray-800 border border-gray-700 truncate max-w-[150px]">
-                        <Mail size={10} />
-                        {user.email}
-                      </span>
-                    )}
                   </div>
                 </div>
               </div>
 
               {/* Actions Overlay / Bottom Bar */}
               <div className="mt-4 pt-4 border-t border-gray-800 flex justify-end gap-2">
-                <button
-                  onClick={() => openEditModal(user)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl text-blue-400 hover:bg-blue-500/10 border border-transparent hover:border-blue-500/30 transition-all text-sm font-medium"
-                >
-                  <Edit2 size={16} />
-                  แก้ไข
-                </button>
-                {user.id !== profile?.userId && (
-                  <button
-                    onClick={() => handleDeleteUser(user.id)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/30 transition-all text-sm font-medium"
-                  >
-                    <Trash2 size={16} />
-                    ลบ
-                  </button>
+                {user.status === 'pending' && (
+                  <>
+                    <button
+                      onClick={() => handleRejectUser(user)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-xl text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/30 transition-all text-sm font-medium"
+                    >
+                      <X size={16} />
+                      ปฏิเสธ
+                    </button>
+                    <button
+                      onClick={() => handleApproveUser(user)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-xl text-green-400 hover:bg-green-500/10 border border-transparent hover:border-green-500/30 transition-all text-sm font-medium"
+                    >
+                      <ShieldCheck size={16} />
+                      อนุมัติ
+                    </button>
+                  </>
+                )}
+                {user.status !== 'pending' && (
+                  <>
+                    <button
+                      onClick={() => openEditModal(user)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-xl text-purple-400 hover:bg-purple-500/10 border border-transparent hover:border-purple-500/30 transition-all text-sm font-medium"
+                    >
+                      <Edit2 size={16} />
+                      แก้ไข
+                    </button>
+                    {user.id !== profile?.userId && (
+                      <button
+                        onClick={() => handleDeleteUser(user.id)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-xl text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/30 transition-all text-sm font-medium"
+                      >
+                        <Trash2 size={16} />
+                        ลบ
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -335,7 +451,7 @@ const UserManagement = ({ profile }) => {
                     required
                     value={formData.displayName}
                     onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-                    className="w-full px-4 py-3 bg-gray-950 border border-gray-800 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                    className="w-full px-4 py-3 bg-gray-950 border border-gray-800 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
                   />
                 </div>
                 <div className="space-y-2">
@@ -344,12 +460,26 @@ const UserManagement = ({ profile }) => {
                     required
                     value={formData.role}
                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                    className="w-full px-4 py-3 bg-gray-950 border border-gray-800 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                    disabled={selectedUser.role === 'moderator' && selectedUser.id === profile?.userId}
+                    className="w-full px-4 py-3 bg-gray-950 border border-gray-800 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                    disabled={selectedUser.role === 'admin' && selectedUser.id === profile?.userId}
                   >
                     <option value="technician">ช่างซ่อม</option>
                     <option value="supervisor">หัวหน้างาน</option>
                     <option value="moderator">ผู้ดูแลระบบ</option>
+                    <option value="admin">Administator</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-400">สถานะ *</label>
+                  <select
+                    required
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                    className="w-full px-4 py-3 bg-gray-950 border border-gray-800 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                  >
+                    <option value="active">ปกติ (Active)</option>
+                    <option value="pending">รอการตรวจสอบ (Pending)</option>
+                    <option value="rejected">ระงับการใช้งาน (Rejected)</option>
                   </select>
                 </div>
                 <div className="flex gap-3 pt-4 sm:pb-0 pb-8">

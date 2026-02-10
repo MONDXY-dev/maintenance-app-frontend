@@ -156,8 +156,6 @@ export default function NotificationsCenter({ profile }) {
               <CardContent className="space-y-4">
                 {[
                   { key: 'enable_in_app', label: 'แจ้งเตือนในแอป', icon: Bell },
-                  { key: 'enable_line_push', label: 'LINE Push Notification', icon: Bell },
-                  { key: 'enable_email', label: 'อีเมล', icon: Bell },
                 ].map(item => (
                   <div key={item.key} className="flex items-center justify-between p-4 bg-gray-900/30 rounded-lg">
                     <div className="flex items-center gap-3">
@@ -187,7 +185,6 @@ export default function NotificationsCenter({ profile }) {
                   { key: 'notify_assigned', label: 'ได้รับมอบหมายงาน' },
                   { key: 'notify_status_change', label: 'สถานะเปลี่ยน' },
                   { key: 'notify_overdue', label: 'งานเกินกำหนด' },
-                  { key: 'notify_low_stock', label: 'อะไหล่ใกล้หมด' },
                 ].map(item => (
                   <div key={item.key} className="flex items-center justify-between p-4 bg-gray-900/30 rounded-lg">
                     <span className="text-white">{item.label}</span>

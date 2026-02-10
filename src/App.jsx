@@ -10,7 +10,6 @@ import Header from './components/Header';
 import Button from './components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './components/ui/Card';
 // New CMMS Components
-import Dashboard from './components/Dashboard';
 import NotificationsCenter from './components/NotificationsCenter';
 
 
@@ -180,20 +179,7 @@ function App() {
             </Card>
           )
 
-        ) : currentView === 'dashboard' ? (
-          // Dashboard View (Admin/Moderator Only)
-          ['admin', 'moderator'].includes(profile.role) ? (
-            <Dashboard onBack={() => setCurrentView('maintenance')} />
-          ) : (
-            <Card className="border-red-900/50 bg-red-950/10 p-8 text-center max-w-2xl mx-auto">
-              <Ban className="w-12 h-12 text-red-500 mx-auto mb-4" />
-              <CardTitle className="text-red-500">คุณไม่มีสิทธิ์เข้าถึงหน้านี้</CardTitle>
-              <CardDescription className="mt-2">เฉพาะผู้ดูแลระบบเท่านั้นที่สามารถเข้าถึง Dashboard ได้</CardDescription>
-              <Button onClick={() => setCurrentView('maintenance')} variant="outline" className="mt-6">
-                <ChevronLeft className="w-4 h-4 mr-2" />กลับหน้าหลัก
-              </Button>
-            </Card>
-          )
+        
         ) : currentView === 'notifications' ? (
           // Notifications Center (All Users)
           <NotificationsCenter onBack={() => setCurrentView('maintenance')} profile={profile} />
