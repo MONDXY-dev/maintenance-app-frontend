@@ -2,18 +2,19 @@ import { useState, useEffect, useRef } from 'react';
 import { Camera, CheckCircle2, X, Wrench, Factory, Zap, FileText, Plus, AlertCircle, AlertTriangle, Settings, Volume2, Gauge, Droplets, ClipboardCheck, HelpCircle, ChevronRight, ArrowLeft, Loader2 } from 'lucide-react';
 import { equipmentAPI, maintenanceAPI } from '../services/api';
 
-const MaintenanceForm = ({ userId, onSuccess, onCancel }) => {
+const MaintenanceForm = ({ userId, onSuccess, onCancel, initialData }) => {
   const [equipment, setEquipment] = useState([]);
   const [formData, setFormData] = useState({
-    equipmentId: '',
-    maintenanceType: '',
+    equipmentId: initialData?.equipmentId || '',
+    maintenanceType: initialData?.maintenanceType || '',
     status: 'pending',
     priority: 'medium',
-    title: '',
-    description: '',
+    title: initialData?.title || '',
+    description: initialData?.description || '',
     notes: '',
     scheduledDate: '',
-    setEquipmentInactive: false
+    setEquipmentInactive: false,
+    scheduleId: initialData?.scheduleId || ''
   });
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -54,7 +55,13 @@ const MaintenanceForm = ({ userId, onSuccess, onCancel }) => {
     return colors[color] || colors.gray;
   };
 
+
   useEffect(() => {
+    if (initialData) {
+      // This block was empty in the instruction, so keeping it empty.
+      // If there was an intention to populate formData from initialData here,
+      // it should be explicitly defined.
+    }
     fetchEquipment();
   }, []);
 
@@ -96,6 +103,7 @@ const MaintenanceForm = ({ userId, onSuccess, onCancel }) => {
       formDataToSend.append('description', formData.description);
       formDataToSend.append('setEquipmentInactive', formData.setEquipmentInactive);
       if (formData.notes) formDataToSend.append('notes', formData.notes);
+      if (formData.scheduleId) formDataToSend.append('scheduleId', formData.scheduleId);
 
       if (selectedImages.length > 0) {
         selectedImages.forEach(image => {
@@ -156,6 +164,7 @@ const MaintenanceForm = ({ userId, onSuccess, onCancel }) => {
 
   const selectedEquipment = equipment.find(e => (e.equipment_id || e.id) == formData.equipmentId);
   const selectedIssue = issueTypes.find(i => i.id === formData.maintenanceType);
+
 
   return (
     <div className="fixed inset-0 z-[100] bg-black animate-in fade-in duration-200 flex flex-col h-[100dvh]">
@@ -222,7 +231,7 @@ const MaintenanceForm = ({ userId, onSuccess, onCancel }) => {
               ) : (
                 equipment.map((item, index) => (
                   <button
-                    key={item.id || `eq-${index}`}
+                    key={item.equipment_id || item.id || `eq-${index}`}
                     type="button"
                     onClick={() => {
                       setFormData(prev => ({ ...prev, equipmentId: item.equipment_id || item.id }));
@@ -238,7 +247,7 @@ const MaintenanceForm = ({ userId, onSuccess, onCancel }) => {
                       <Factory size={28} className="text-white" />
                     </div>
                     <div className="flex-1 min-w-0 text-left">
-                      <p className={`font-semibold text-lg truncate ${formData.equipmentId == item.id ? 'text-emerald-400' : 'text-white'}`}>
+                      <p className={`font-semibold text-lg truncate ${formData.equipmentId == (item.equipment_id || item.id) ? 'text-emerald-400' : 'text-white'}`}>
                         {item.equipment_name}
                       </p>
                       <p className="text-sm text-zinc-500 truncate">{item.equipment_code} • {item.location || 'ไม่ระบุตำแหน่ง'}</p>

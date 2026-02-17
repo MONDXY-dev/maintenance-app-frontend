@@ -4,6 +4,7 @@ import { equipmentAPI } from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/Card';
 import Button from './ui/Button';
 import Badge from './ui/Badge';
+import MaintenanceForm from './MaintenanceForm';
 
 const EquipmentManagement = ({ profile }) => {
   const [equipment, setEquipment] = useState([]);
@@ -36,6 +37,21 @@ const EquipmentManagement = ({ profile }) => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
+
+  // Maintenance Request State
+  const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
+  const [maintenanceInitialData, setMaintenanceInitialData] = useState(null);
+
+  const handleRequestMaintenance = (schedule) => {
+    setMaintenanceInitialData({
+      equipmentId: selectedEquipment.equipment_id,
+      maintenanceType: 'routine',
+      title: 'PM: ' + (schedule.description || 'Maintenance Schedule'),
+      description: `Preventive Maintenance for schedule: ${schedule.description || 'Regular check'}`,
+      scheduleId: schedule.id
+    });
+    setShowMaintenanceForm(true);
+  };
 
   const equipmentTypes = [
     { value: 'conveyor', label: 'สายพาน', icon: '🔄' },
@@ -132,7 +148,7 @@ const EquipmentManagement = ({ profile }) => {
 
     try {
       if (editingEquipment) {
-        await equipmentAPI.update(editingEquipment.id || editingEquipment.equipment_id, formData);
+        await equipmentAPI.update(editingEquipment.equipment_id, formData);
       } else {
         await equipmentAPI.create(formData);
       }
@@ -171,7 +187,7 @@ const EquipmentManagement = ({ profile }) => {
     }
 
     try {
-      await equipmentAPI.delete(item.id);
+      await equipmentAPI.delete(item.equipment_id);
       fetchEquipment();
     } catch (err) {
       alert(err.message);
@@ -180,7 +196,7 @@ const EquipmentManagement = ({ profile }) => {
 
   const handleToggle = async (item) => {
     try {
-      await equipmentAPI.toggle(item.id);
+      await equipmentAPI.toggle(item.equipment_id);
       fetchEquipment();
     } catch (err) {
       alert(err.message);
@@ -212,7 +228,7 @@ const EquipmentManagement = ({ profile }) => {
         }
       ];
 
-      await equipmentAPI.update(selectedEquipment.id, {
+      await equipmentAPI.update(selectedEquipment.equipment_id, {
         ...selectedEquipment,
         maintenance_schedules: updatedSchedules
       });
@@ -222,7 +238,7 @@ const EquipmentManagement = ({ profile }) => {
 
       // Update selectedEquipment with new data
       const updatedData = await equipmentAPI.getAll(filterActive === 'inactive');
-      const updated = (updatedData.equipment || []).find(e => e.id === selectedEquipment.id);
+      const updated = (updatedData.equipment || []).find(e => e.equipment_id === selectedEquipment.equipment_id);
       if (updated) {
         setSelectedEquipment(updated);
       }
@@ -244,7 +260,7 @@ const EquipmentManagement = ({ profile }) => {
     try {
       const updatedSchedules = selectedEquipment.maintenance_schedules.filter((_, idx) => idx !== scheduleIndex);
 
-      await equipmentAPI.update(selectedEquipment.id, {
+      await equipmentAPI.update(selectedEquipment.equipment_id, {
         ...selectedEquipment,
         maintenance_schedules: updatedSchedules
       });
@@ -254,7 +270,7 @@ const EquipmentManagement = ({ profile }) => {
 
       // Update selectedEquipment with new data
       const updatedData = await equipmentAPI.getAll(filterActive === 'inactive');
-      const updated = (updatedData.equipment || []).find(e => e.id === selectedEquipment.id);
+      const updated = (updatedData.equipment || []).find(e => e.equipment_id === selectedEquipment.equipment_id);
       if (updated) {
         setSelectedEquipment(updated);
       }
@@ -573,7 +589,7 @@ const EquipmentManagement = ({ profile }) => {
         ) : (
           filteredEquipment.map((item, index) => {
             const maintenanceStatus = getMaintenanceStatus(item);
-            const itemKey = item.id || item.equipment_code || `equipment-${index}`;
+            const itemKey = item.equipment_id || item.id || item.equipment_code || `equipment-${index}`;
 
             return (
               <Card
@@ -951,7 +967,7 @@ const EquipmentManagement = ({ profile }) => {
                             className="w-full bg-gray-900 border border-gray-800 text-white px-4 py-3 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
                           />
                         </div>
-                        
+
                         <div className="space-y-2 col-span-2 mt-2 pt-4 border-t border-gray-800">
                           <label className="text-sm font-medium text-blue-400 flex items-center gap-2">
                             <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
@@ -1157,6 +1173,16 @@ const EquipmentManagement = ({ profile }) => {
                             >
                               {isOverdue ? '🔴 เกินกำหนด' : isClose ? '🟡 ใกล้ถึง' : '🟢 ปกติ'}
                             </Badge>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className={`px-2 h-7 gap-1 ${isOverdue ? 'text-orange-400 hover:text-orange-300 hover:bg-orange-500/10' : 'text-gray-400 hover:text-gray-300'}`}
+                              onClick={() => handleRequestMaintenance(schedule)}
+                              title="แจ้งซ่อมบำรุง"
+                            >
+                              <Wrench size={14} />
+                              <span className="text-xs">แจ้งซ่อม</span>
+                            </Button>
                             <button
                               onClick={() => handleDeleteSchedule(index)}
                               disabled={savingSchedule}
@@ -1379,6 +1405,39 @@ const EquipmentManagement = ({ profile }) => {
               )}
             </div>
           </Card>
+        </div>
+      )}
+
+      {/* Maintenance Request Modal */}
+      {showMaintenanceForm && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[9999] overflow-y-auto w-full h-full">
+          <div className="bg-gray-900 w-full max-w-2xl rounded-2xl border border-gray-800 shadow-2xl my-auto relative">
+            <div className="flex justify-between items-center p-5 border-b border-gray-800 sticky top-0 bg-gray-900 z-10 rounded-t-2xl">
+              <div>
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Wrench className="text-orange-500" />
+                  แจ้งซ่อมบำรุงตามรอบ (PM)
+                </h3>
+                <p className="text-gray-400 text-sm mt-1">
+                  {selectedEquipment?.equipment_name} - {selectedEquipment?.equipment_code}
+                </p>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setShowMaintenanceForm(false)}>
+                <X size={20} />
+              </Button>
+            </div>
+            <div className="p-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
+              <MaintenanceForm
+                userId={profile?.id}
+                initialData={maintenanceInitialData}
+                onSuccess={() => {
+                  setShowMaintenanceForm(false);
+                  fetchEquipment(); // Refresh data
+                }}
+                onCancel={() => setShowMaintenanceForm(false)}
+              />
+            </div>
+          </div>
         </div>
       )}
     </div>

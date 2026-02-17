@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { usageAPI, equipmentAPI, getImageUrl } from '../services/api';
 import { formatThaiDateTime } from '../lib/utils';
+import MaintenanceForm from './MaintenanceForm';
 
 export default function UsageLog({ onClose, userId }) {
   const [equipment, setEquipment] = useState([]);
@@ -46,6 +47,10 @@ export default function UsageLog({ onClose, userId }) {
   const [editingLog, setEditingLog] = useState(null);
   const [editValue, setEditValue] = useState('');
   const [isLogging, setIsLogging] = useState(false);
+
+  // Maintenance Request State
+  const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
+  const [maintenanceInitialData, setMaintenanceInitialData] = useState(null);
 
   const [logNotes, setLogNotes] = useState('');
   const [logCondition, setLogCondition] = useState('normal');
@@ -246,6 +251,20 @@ export default function UsageLog({ onClose, userId }) {
       await fetchEquipmentDetails(selectedEquipment);
       await fetchEquipment();
 
+      // Check for due maintenance
+      try {
+        const freshEq = await equipmentAPI.getById(selectedEquipment.equipment_id || selectedEquipment.id);
+        const freshStatus = getEquipmentMaintenanceStatus(freshEq.equipment);
+
+        if (freshStatus.mostUrgent && (freshStatus.mostUrgent.isOverdue || freshStatus.mostUrgent.isDue)) {
+          if (confirm(`⚠️ มีรอบบำรุงรักษาครบกำหนด (${freshStatus.mostUrgent.schedule.description})\nต้องการแจ้งซ่อม/บันทึกการซ่อมเลยหรือไม่?`)) {
+            handleRequestMaintenance(freshStatus.mostUrgent.schedule);
+          }
+        }
+      } catch (err) {
+        console.error("Error checking PM status:", err);
+      }
+
       // Reset logging state
       setIsLogging(false);
       setInputValue('');
@@ -260,6 +279,18 @@ export default function UsageLog({ onClose, userId }) {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleRequestMaintenance = (schedule, eq = selectedEquipment) => {
+    if (!eq) return;
+    setMaintenanceInitialData({
+      equipmentId: eq.equipment_id || eq.id,
+      maintenanceType: 'routine',
+      title: 'PM: ' + (schedule.description || 'Maintenance Schedule'),
+      description: `Preventive Maintenance for schedule: ${schedule.description || 'Regular check'}`,
+      scheduleId: schedule.id
+    });
+    setShowMaintenanceForm(true);
   };
 
   const handleStartEdit = (log) => {
@@ -320,284 +351,7 @@ export default function UsageLog({ onClose, userId }) {
     return 'bg-green-500';
   };
 
-  // Equipment List View
-  const renderEquipmentList = () => (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-800 pb-6">
-        <div className="flex items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-              <Gauge className="w-8 h-8 text-green-500" />
-              บันทึกการใช้งาน
-            </h1>
-            <p className="text-gray-400 mt-1">Usage Log</p>
-          </div>
-        </div>
-      </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card className="border-gray-800">
-          <CardContent className="p-5 min-h-[100px] flex flex-col items-center justify-center">
-            <Settings className="w-8 h-8 text-blue-400 mb-2" />
-            <p className="text-2xl font-bold text-white">{equipment.length}</p>
-            <p className="text-sm text-gray-400 text-center">เครื่องจักรทั้งหมด</p>
-          </CardContent>
-        </Card>
-        <Card className="border-gray-800">
-          <CardContent className="p-5 min-h-[100px] flex flex-col items-center justify-center">
-            <AlertTriangle className="w-8 h-8 text-amber-400 mb-2" />
-            <p className="text-2xl font-bold text-white">
-              {equipment.filter(eq => {
-                const status = getEquipmentMaintenanceStatus(eq);
-                return status.mostUrgent && status.mostUrgent.isDue && !status.mostUrgent.isOverdue;
-              }).length}
-            </p>
-            <p className="text-sm text-gray-400 text-center">ใกล้ครบกำหนด</p>
-          </CardContent>
-        </Card>
-        <Card className="border-gray-800">
-          <CardContent className="p-5 min-h-[100px] flex flex-col items-center justify-center">
-            <Wrench className="w-8 h-8 text-red-400 mb-2" />
-            <p className="text-2xl font-bold text-white">
-              {equipment.filter(eq => {
-                const status = getEquipmentMaintenanceStatus(eq);
-                return status.mostUrgent && status.mostUrgent.isOverdue;
-              }).length}
-            </p>
-            <p className="text-sm text-gray-400 text-center">เกินกำหนด</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Equipment List */}
-      {loading ? (
-        <Card className="p-12 text-center border-dashed">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-500 mx-auto"></div>
-          <p className="mt-4 text-gray-500 font-medium">กำลังโหลด...</p>
-        </Card>
-      ) : sortedEquipment.length === 0 ? (
-        <Card className="p-12 text-center border-dashed">
-          <Settings className="w-16 h-16 mx-auto text-gray-600 mb-4" />
-          <p className="text-gray-500 font-medium">ไม่พบเครื่องจักร</p>
-        </Card>
-      ) : (
-        <div className="space-y-3">
-          {sortedEquipment.map((eq) => {
-            const { mostUrgent, hasOpenTicket } = getEquipmentMaintenanceStatus(eq);
-            const schedules = eq.maintenance_schedules || [];
-            const isExpanded = showListProgress[eq.id];
-
-            return (
-              <Card
-                key={eq.equipment_id || eq.id}
-                className="border-gray-800 hover:border-green-500/50 transition-all"
-              >
-                <CardContent className="p-0">
-                  {/* Main Card Content */}
-                  <div
-                    onClick={() => fetchEquipmentDetails(eq)}
-                    className="p-4 cursor-pointer hover:bg-gray-900/30 transition-colors"
-                  >
-                    <div className="flex items-center gap-4">
-                      {/* Equipment Icon */}
-                      <div className={`
-                        w-12 h-12 rounded-lg flex items-center justify-center
-                        ${mostUrgent?.isOverdue
-                          ? 'bg-red-500/10'
-                          : mostUrgent?.isDue
-                            ? 'bg-amber-500/10'
-                            : 'bg-green-500/10'
-                        }
-                      `}>
-                        <Gauge className={`w-6 h-6 ${mostUrgent?.isOverdue
-                          ? 'text-red-400'
-                          : mostUrgent?.isDue
-                            ? 'text-amber-400'
-                            : 'text-green-400'
-                          }`} />
-                      </div>
-
-                      {/* Equipment Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-medium text-white truncate">{eq.equipment_name || eq.name}</h3>
-                          {eq.equipment_code && (
-                            <span className="text-xs text-gray-500 font-mono">({eq.equipment_code})</span>
-                          )}
-                          {hasOpenTicket && (
-                            <Badge className="bg-orange-500/10 text-orange-400 border-orange-500/30">
-                              มีใบงาน
-                            </Badge>
-                          )}
-                        </div>
-
-                        {/* Location & Type */}
-                        {(eq.location || eq.equipment_type) && (
-                          <p className="text-xs text-gray-500 mb-1 truncate">
-                            {eq.location && <span>📍 {eq.location}</span>}
-                            {eq.location && eq.equipment_type && <span className="mx-1">•</span>}
-                            {eq.equipment_type && <span>🏭 {eq.equipment_type}</span>}
-                          </p>
-                        )}
-
-                        <div className="flex items-center gap-3 text-sm">
-                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-gray-800 rounded text-gray-300">
-                            <Activity className="w-3.5 h-3.5 text-blue-400" />
-                            <span className="font-medium">
-                              {parseFloat(eq.current_usage || eq.current_hours || 0).toLocaleString()}
-                            </span>
-                            <span className="text-gray-500">ชม.</span>
-                          </span>
-
-                          {mostUrgent && (
-                            <Badge className={getStatusBadge(mostUrgent.remaining, parseFloat(mostUrgent.schedule.interval_value)).className}>
-                              {mostUrgent.isOverdue ? (
-                                <>เกิน {Math.abs(mostUrgent.remaining).toLocaleString()} ชม.</>
-                              ) : (
-                                <>เหลือ {mostUrgent.remaining.toLocaleString()} ชม.</>
-                              )}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Arrow */}
-                      <div className="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center">
-                        <ChevronRight className="w-5 h-5 text-gray-400" />
-                      </div>
-                    </div>
-
-                    {/* Quick Progress Preview */}
-                    {mostUrgent && !isExpanded && (
-                      <div className="mt-4 pt-4 border-t border-gray-800">
-                        <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
-                          <span>{mostUrgent.schedule.description || `ทุก ${mostUrgent.schedule.interval_value} ชม.`}</span>
-                          <span>{Math.round(mostUrgent.progress)}%</span>
-                        </div>
-                        <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all ${getProgressColor(mostUrgent.remaining, parseFloat(mostUrgent.schedule.interval_value))
-                              }`}
-                            style={{ width: `${Math.min(mostUrgent.progress, 100)}%` }}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Expandable Progress Section */}
-                  {schedules.length > 0 && (
-                    <>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleListProgress(eq.equipment_id || eq.id);
-                        }}
-                        className="w-full py-2.5 px-4 flex items-center justify-center gap-2 text-sm text-gray-500 hover:bg-gray-900/30 transition-colors border-t border-gray-800"
-                      >
-                        {isExpanded ? (
-                          <>
-                            <ChevronUp className="w-4 h-4" />
-                            ซ่อนรอบเช็ค
-                          </>
-                        ) : (
-                          <>
-                            <ChevronDown className="w-4 h-4" />
-                            แสดงรอบเช็ค ({schedules.length})
-                          </>
-                        )}
-                      </button>
-
-                      {isExpanded && (
-                        <div className="px-4 pb-4 space-y-2 bg-gray-900/30">
-                          {schedules.map((schedule) => {
-                            const calc = calculateNextMaintenance({
-                              ...schedule,
-                              last_completed_at_usage: parseFloat(schedule.last_completed_at_usage) || 0
-                            });
-                            if (!calc) return null;
-                            const interval = parseFloat(schedule.interval_value);
-
-                            return (
-                              <div
-                                key={schedule.id}
-                                className="p-3 rounded-lg bg-gray-800/50"
-                              >
-                                <div className="flex items-center justify-between mb-2">
-                                  <div className="flex items-center gap-2">
-                                    <Wrench className="w-4 h-4 text-gray-500" />
-                                    <span className="font-medium text-gray-300 text-sm">
-                                      {schedule.description || `ทุก ${schedule.interval_value} ชม.`}
-                                    </span>
-                                  </div>
-                                  {calc.hasOpenTicket && (
-                                    <Badge className="bg-orange-500/10 text-orange-400 text-xs">
-                                      #{calc.currentTicketId}
-                                    </Badge>
-                                  )}
-                                </div>
-
-                                <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
-                                  <span>ทุก {interval.toLocaleString()} ชม.</span>
-                                  <span>•</span>
-                                  <span>ครบที่ {Math.round(calc.nextDue).toLocaleString()} ชม.</span>
-                                </div>
-
-                                <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                                  <div
-                                    className={`h-full rounded-full transition-all ${getProgressColor(calc.remaining, interval)}`}
-                                    style={{ width: `${Math.min(calc.progress, 100)}%` }}
-                                  />
-                                </div>
-
-                                <div className="flex justify-end mt-2">
-                                  <span className={`text-xs font-medium ${calc.isOverdue ? 'text-red-400' : calc.isDue ? 'text-amber-400' : 'text-green-400'
-                                    }`}>
-                                    {calc.isOverdue
-                                      ? `เกิน ${Math.abs(calc.remaining).toLocaleString()} ชม.`
-                                      : `เหลือ ${calc.remaining.toLocaleString()} ชม.`
-                                    }
-                                  </span>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
-      {/* Image Preview Modal */}
-      {previewImage && (
-        <div
-          className="fixed inset-0 z-[110] bg-black/95 flex items-center justify-center p-4 animate-in fade-in duration-200"
-          onClick={() => setPreviewImage(null)}
-        >
-          <div className="relative max-w-4xl w-full max-h-screen flex flex-col items-center">
-            <button
-              onClick={() => setPreviewImage(null)}
-              className="absolute -top-12 right-0 w-10 h-10 bg-gray-800 text-white rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            <img
-              src={previewImage}
-              alt="Preview"
-              className="max-w-full max-h-[80vh] rounded-lg shadow-2xl border border-gray-800 object-contain"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
-        </div>
-      )}
-    </div>
-  );
 
   // Header Logic
   const isDetailView = !!selectedEquipment;
@@ -958,6 +712,21 @@ export default function UsageLog({ onClose, userId }) {
                               <Badge className="bg-orange-500/10 text-orange-400 border-orange-500/30">
                                 ใบงาน #{calc.currentTicketId}
                               </Badge>
+                            )}
+                            {/* Manual Trigger Button */}
+                            {!calc.hasOpenTicket && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="ml-auto bg-orange-500/10 text-orange-400 border-orange-500/30 hover:bg-orange-500/20 h-8"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRequestMaintenance(schedule, selectedEquipment);
+                                }}
+                              >
+                                <Wrench className="w-3 h-3 mr-1" />
+                                แจ้งซ่อม
+                              </Button>
                             )}
                           </div>
 
@@ -1401,6 +1170,20 @@ export default function UsageLog({ onClose, userId }) {
                                             #{calc.currentTicketId}
                                           </Badge>
                                         )}
+                                        {/* Manual Trigger Button */}
+                                        {!calc.hasOpenTicket && (
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="bg-orange-500/10 text-orange-400 border-orange-500/30 hover:bg-orange-500/20 h-6 text-[10px] px-2"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleRequestMaintenance(schedule, eq);
+                                            }}
+                                          >
+                                            แจ้งซ่อม
+                                          </Button>
+                                        )}
                                       </div>
 
                                       <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
@@ -1442,6 +1225,21 @@ export default function UsageLog({ onClose, userId }) {
         )
         }
       </main >
+
+      {/* Maintenance Request Modal */}
+      {showMaintenanceForm && (
+        <MaintenanceForm
+          userId={userId}
+          initialData={maintenanceInitialData}
+          onSuccess={() => {
+            setShowMaintenanceForm(false);
+            if (selectedEquipment) fetchEquipmentDetails(selectedEquipment);
+            fetchEquipment();
+          }}
+          onCancel={() => setShowMaintenanceForm(false)}
+        />
+      )}
+
     </div >
   );
 }

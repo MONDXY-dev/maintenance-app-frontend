@@ -10,14 +10,20 @@ export interface MaintenanceUser {
 }
 
 export interface Equipment {
-  id: number;
-  equipment_id?: number;
+  id?: number;
+  equipment_id: number;
   equipment_name: string;
   equipment_code: string;
   location?: string;
   description?: string;
   running_hours?: number;
   status?: string;
+  is_active?: boolean;
+  source?: string;
+  maintenance_unit?: string;
+  initial_usage?: number;
+  current_usage?: number;
+  maintenance_schedules?: any[];
 }
 
 export interface MaintenanceRecord {
