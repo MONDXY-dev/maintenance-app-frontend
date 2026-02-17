@@ -6,7 +6,7 @@ export interface MaintenanceUser {
   displayName: string;
   pictureUrl?: string;
   email?: string;
-  role: 'admin' | 'supervisor' | 'technician' | 'moderator';
+  role: 'admin' | 'supervisor' | 'technician';
 }
 
 export interface Equipment {

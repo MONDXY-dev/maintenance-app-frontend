@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { RefreshCcw, AlertTriangle, Ban, ClipboardCopy, Wrench, X, Plus, LogOut, ChevronLeft, Gauge } from 'lucide-react';
+import { RefreshCcw, AlertTriangle, Ban, ClipboardCopy, Wrench, X, Plus, LogOut, ChevronLeft, Gauge, Crown, Shield, Eye } from 'lucide-react';
 import useLiff from './hooks/useLiff';
 import MaintenanceList from './components/MaintenanceList';
 import MaintenanceForm from './components/MaintenanceForm';
@@ -14,7 +14,7 @@ import NotificationsCenter from './components/NotificationsCenter';
 
 
 function App() {
-  const { isLoggedIn, isLoading, profile, error, lineUserId, logout } = useLiff();
+  const { isLoggedIn, isLoading, profile, error, lineUserId, logout, devLogin, isDev, liff } = useLiff();
   const [showForm, setShowForm] = useState(false);
   const [showUsageLog, setShowUsageLog] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -121,10 +121,64 @@ function App() {
 
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
+        <div className="text-center max-w-md w-full">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto mb-4"></div>
-          <p className="text-gray-400">กำลังเข้าสู่ระบบ...</p>
+          <p className="text-gray-400 mb-6">กำลังเข้าสู่ระบบ...</p>
+
+          {/* Dev Login Buttons - Only shown in development mode */}
+          {isDev && (
+            <div className="mt-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
+              <div className="flex items-center gap-2 justify-center mb-3">
+                <Wrench className="w-5 h-5 text-yellow-500" />
+                <span className="text-yellow-500 font-semibold">Development Mode</span>
+              </div>
+              <p className="text-sm text-gray-400 mb-4">
+                Skip LINE LIFF authentication for local development
+              </p>
+
+              <div className="grid gap-2">
+                <button
+                  onClick={() => devLogin('admin')}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg hover:from-purple-500 hover:to-indigo-500 text-white font-medium transition-all duration-200 shadow-lg shadow-purple-500/20 text-sm"
+                >
+                  <Crown className="w-4 h-4" />
+                  Login as Admin
+                </button>
+
+
+                <button
+                  onClick={() => devLogin('supervisor')}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange-600 to-amber-600 rounded-lg hover:from-orange-500 hover:to-amber-500 text-white font-medium transition-all duration-200 shadow-lg shadow-orange-500/20 text-sm"
+                >
+                  <Eye className="w-4 h-4" />
+                  Login as Supervisor
+                </button>
+
+                <button
+                  onClick={() => devLogin('technician')}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-lg hover:from-blue-500 hover:to-cyan-500 text-white font-medium transition-all duration-200 shadow-lg shadow-blue-500/20 text-sm"
+                >
+                  <Wrench className="w-4 h-4" />
+                  Login as Technician
+                </button>
+              </div>
+
+              <p className="text-xs text-gray-500 mt-4">
+                Instantly switch between roles for testing
+              </p>
+            </div>
+          )}
+
+          {/* Manual LIFF Login (only shown in Dev when not auto-redirecting) */}
+          {isDev && !isLoggedIn && (
+            <button
+              onClick={() => liff.login()}
+              className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-800 border border-green-500/30 rounded-lg hover:bg-gray-700 text-green-400 font-medium transition-all duration-200"
+            >
+              Line Login (Real)
+            </button>
+          )}
         </div>
       </div>
     );
@@ -141,8 +195,8 @@ function App() {
 
       <main className="container mx-auto px-4 py-8">
         {currentView === 'users' ? (
-          // User Management View (Moderator Only)
-          ['admin', 'moderator'].includes(profile.role) ? (
+          // User Management View (Admin Only)
+          profile.role === 'admin' ? (
             <UserManagement profile={profile} />
           ) : (
             <Card className="border-red-900/50 bg-red-950/10 p-8 text-center max-w-2xl mx-auto">
@@ -160,8 +214,8 @@ function App() {
             </Card>
           )
         ) : currentView === 'equipment' ? (
-          // Equipment Management View (Moderator Only)
-          ['admin', 'moderator'].includes(profile.role) ? (
+          // Equipment Management View (Admin + Supervisor)
+          ['admin', 'supervisor'].includes(profile.role) ? (
             <EquipmentManagement profile={profile} />
           ) : (
             <Card className="border-red-900/50 bg-red-950/10 p-8 text-center max-w-2xl mx-auto">

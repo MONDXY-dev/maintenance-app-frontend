@@ -46,9 +46,7 @@ const Header = ({ profile, onLogout, currentView, onViewChange }) => {
                 </button>
               )}
 
-              <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center text-black shadow-lg shadow-green-500/20">
-                <Wrench className="w-6 h-6" />
-              </div>
+              <img src={`${import.meta.env.BASE_URL}android-chrome-192x192.png`} alt="Logo" className="w-10 h-10 rounded-lg shadow-lg shadow-green-500/20" />
               <div className="hidden xs:block">
                 <h1 className="text-lg font-bold text-white leading-tight">Maintenance</h1>
                 <p className="text-[10px] text-gray-500 uppercase tracking-widest font-semibold font-mono">SmartQuary EVR</p>
@@ -71,7 +69,7 @@ const Header = ({ profile, onLogout, currentView, onViewChange }) => {
 
 
                   {/* More Menu (Admin) */}
-                  {['admin', 'moderator'].includes(profile.role) && (
+                  {['admin', 'supervisor'].includes(profile.role) && (
                     <div className="relative">
                       <Button
                         variant="ghost"
@@ -88,6 +86,7 @@ const Header = ({ profile, onLogout, currentView, onViewChange }) => {
                         <>
                           <div className="fixed inset-0 z-40" onClick={() => setShowMoreMenu(false)} />
                           <div className="absolute right-0 top-full mt-1 w-48 bg-gray-900 border border-gray-800 rounded-lg shadow-xl z-50 py-1">
+                            {profile.role === 'admin' && (
                             <button
                               onClick={() => {
                                 onViewChange('users');
@@ -98,6 +97,7 @@ const Header = ({ profile, onLogout, currentView, onViewChange }) => {
                               <User className="w-4 h-4 mr-2" />
                               จัดการผู้ใช้
                             </button>
+                            )}
                             <button
                               onClick={() => {
                                 onViewChange('equipment');
@@ -130,7 +130,7 @@ const Header = ({ profile, onLogout, currentView, onViewChange }) => {
                     <div className="text-right hidden sm:block">
                       <p className="text-sm font-semibold text-white leading-none">{profile.displayName}</p>
                       <div className="flex items-center justify-end gap-2 mt-1">
-                        {['admin', 'moderator'].includes(profile.role) && (
+                        {profile.role === 'admin' && (
                           <Badge variant="default" className="bg-purple-500/10 text-purple-400 border-purple-500/20 py-0 px-1.5 text-[10px]">
                             Admin
                           </Badge>
@@ -180,9 +180,7 @@ const Header = ({ profile, onLogout, currentView, onViewChange }) => {
             {/* Sidebar Header */}
             <div className="p-4 border-b border-gray-800 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center text-black">
-                  <Wrench className="w-6 h-6" />
-                </div>
+                <img src={`${import.meta.env.BASE_URL}android-chrome-192x192.png`} alt="Logo" className="w-10 h-10 rounded-lg" />
                 <div>
                   <h2 className="font-bold text-white">Maintenance</h2>
                   <p className="text-[10px] text-gray-500 uppercase tracking-widest">SmartQuary</p>
@@ -214,7 +212,7 @@ const Header = ({ profile, onLogout, currentView, onViewChange }) => {
                 <span className="font-medium">การแจ้งเตือน</span>
               </button>
 
-              {['admin', 'moderator'].includes(profile.role) && (
+              {['admin', 'supervisor'].includes(profile.role) && (
                 <>
                   <div className="my-4 border-t border-gray-800/50 mx-4" />
                   <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Management</p>
@@ -228,6 +226,7 @@ const Header = ({ profile, onLogout, currentView, onViewChange }) => {
                     <span className="font-medium">จัดการเครื่องจักร</span>
                   </button>
 
+                  {profile.role === 'admin' && (
                   <button
                     onClick={() => handleMobileNav('users')}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${currentView === 'users' ? 'bg-purple-500/10 text-purple-400' : 'text-gray-400 hover:bg-gray-900 hover:text-white'}`}
@@ -235,6 +234,7 @@ const Header = ({ profile, onLogout, currentView, onViewChange }) => {
                     <User className="w-5 h-5" />
                     <span className="font-medium">จัดการผู้ใช้</span>
                   </button>
+                  )}
                 </>
               )}
             </div>

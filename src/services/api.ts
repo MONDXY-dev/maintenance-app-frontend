@@ -289,7 +289,7 @@ export const usageAPI = {
   },
 };
 
-// Users API (for moderators)
+// Users API (for admins)
 export const usersAPI = {
   getAll: async (): Promise<{ users: any[] }> => {
     const response = await fetch(`${API_URL}/users`);

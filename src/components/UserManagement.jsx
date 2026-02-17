@@ -155,7 +155,7 @@ const UserManagement = ({ profile }) => {
 
   const getRoleBadge = (role) => {
     const badges = {
-      moderator: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+      admin: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
       technician: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
       supervisor: 'bg-green-500/20 text-green-400 border-green-500/30',
       user: 'bg-gray-500/20 text-gray-400 border-gray-500/30'
@@ -164,7 +164,7 @@ const UserManagement = ({ profile }) => {
   };
 
   const getRoleIcon = (role) => {
-    return role === 'moderator' ? <Shield className="w-4 h-4" /> : <UserIcon className="w-4 h-4" />;
+    return role === 'admin' ? <Shield className="w-4 h-4" /> : <UserIcon className="w-4 h-4" />;
   };
 
   const filteredUsers = users.filter(user =>
@@ -398,7 +398,7 @@ const UserManagement = ({ profile }) => {
                   >
                     <option value="technician">ช่างซ่อม</option>
                     <option value="supervisor">หัวหน้างาน</option>
-                    <option value="moderator">ผู้ดูแลระบบ</option>
+                    <option value="admin">ผู้ดูแลระบบ</option>
                   </select>
                 </div>
                 <div className="flex gap-3 pt-4 sm:pb-0 pb-8">
@@ -465,7 +465,7 @@ const UserManagement = ({ profile }) => {
                   >
                     <option value="technician">ช่างซ่อม</option>
                     <option value="supervisor">หัวหน้างาน</option>
-                    <option value="moderator">ผู้ดูแลระบบ</option>
+
                     <option value="admin">Administator</option>
                   </select>
                 </div>
